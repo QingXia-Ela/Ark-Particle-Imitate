@@ -16,16 +16,17 @@ class Point {
    * @param {number} size 圆点大小
    * @param {number} colorNum rgb 加起来的总和
    * @param {HTMLCanvasElement} canvas canvas 元素
+   * @param {boolean} cancelRandPlace 取消点初始化的随机点位
    */
-  constructor(orx, ory, size, colorNum = 0, canvas) {
+  constructor(orx, ory, size, colorNum = 0, canvas, cancelRandPlace = false) {
     // 原始位置
     this.orx = orx
     this.ory = ory
     // 圆点大小
     this.size = size
     // 当前位置
-    this.x = Math.random() * canvas.width
-    this.y = Math.random() * canvas.height
+    this.x = cancelRandPlace ? orx + 50 * Math.random() : Math.random() * canvas.width
+    this.y = cancelRandPlace ? ory + 50 * Math.random() : Math.random() * canvas.height
     // 下一个移动位置
     this.nx = orx
     this.ny = ory
@@ -47,8 +48,8 @@ class Point {
     const { adsorbentMode, THICKNESS, DRAG, EASE, ParticlePolymerizeFlag } = options
 
     //移动速度
-    this.spx = (this.nx - this.x) / (ParticlePolymerizeFlag ? 30 : 40)
-    this.spy = (this.ny - this.y) / (ParticlePolymerizeFlag ? 30 : 40)
+    this.spx = (this.nx - this.x) / (ParticlePolymerizeFlag ? 30 : 60)
+    this.spy = (this.ny - this.y) / (ParticlePolymerizeFlag ? 30 : 60)
 
     // 粒子原始位置距离判断
     let dx = mx - this.orx,
@@ -86,7 +87,7 @@ class Point {
     // 最终计算
     if (!ParticlePolymerizeFlag && this.opacity > 0) {
       this.x -= this.spx;
-      this.opacity -= 0.06;
+      this.opacity -= 0.04;
 
       // 全部隐藏时直接移动到随机位置
       if (this.opacity <= 0) {
@@ -95,7 +96,8 @@ class Point {
       }
     } else {
       this.x += this.spx;
-      this.opacity += 0.012;
+      if (this.opacity < 1)
+        this.opacity += 0.012;
     }
     if (!ParticlePolymerizeFlag && this.opacity > 0) {
       this.y -= this.spy;
@@ -114,7 +116,6 @@ class Point {
     ctx.closePath();
   }
 }
-
 
 /**
  * 
@@ -159,6 +160,9 @@ class DameDaneParticle {
     // 动画 id
     this.animeId = -1
 
+    // 初始化标记
+    this.hasInit = false
+
     // 解构 options
     const { spacing } = options
 
@@ -187,6 +191,7 @@ class DameDaneParticle {
       //   mx = e.clientX - cRect.left;
       //   my = e.clientY - cRect.top;
       // })
+      this.hasInit = true
       callback && callback()
     }
   }
@@ -198,8 +203,16 @@ class DameDaneParticle {
    */
   _InitParticle = (ImgData, Spacing = 1) => {
     // 清空原数组？
-    this.PointArr = []
-    let imgW = this.ImgW, imgH = this.ImgH
+    // this.PointArr = []
+    let imgW = this.ImgW, imgH = this.ImgH, cnt = 0
+
+    let arr = this.PointArr, len = arr.length, randIndex, temp
+    while (len) {
+      randIndex = (Math.floor(Math.random() * len--))
+      temp = arr[randIndex]
+      arr[randIndex] = arr[len]
+      arr[len] = temp
+    }
 
     const gap = 4;
     for (var h = 0; h < imgH; h += gap) {
@@ -209,10 +222,26 @@ class DameDaneParticle {
           g = ImgData[position + 1],
           b = ImgData[position + 2];
         var val = r + g + b
-        // 当rgb都为0时，说明颜色值为黑色
-        this.PointArr.push(new Point(w * Spacing + this.renderX, h * Spacing + this.renderY, 1, val, this.canvasEle));
+        // 判断是否有前置像素
+        if (val < 50) {
+          if (arr[cnt]) {
+            const point = arr[cnt]
+            point.orx = point.nx = w * Spacing + this.renderX
+            point.ory = point.ny = h * Spacing + this.renderY
+            const c = Math.floor(val / 3)
+            point.color = `${255 - c},${255 - c},${255 - c}`
+          }
+          else arr[cnt] = new Point(w * Spacing + this.renderX, h * Spacing + this.renderY, 1, val, this.canvasEle, this.hasInit)
+          cnt++
+        }
       }
     }
+    if (cnt < arr.length)
+      this.PointArr = arr.splice(0, cnt)
+
+    if (!options.ParticlePolymerizeFlag) this.ParticlePolymerize(false)
+
+    console.log(this.PointArr);
   }
 
   /** 绘制到 canvas，**此项为内置 api， 不建议随便调用** */
@@ -236,7 +265,7 @@ class DameDaneParticle {
     else options.ParticlePolymerizeFlag = !options.ParticlePolymerizeFlag
     // 控制圆点位置
     this.PointArr.forEach((point) => {
-      point.nx = options.ParticlePolymerizeFlag ? point.orx : + Math.random() * this.canvasEle.width;
+      point.nx = options.ParticlePolymerizeFlag ? point.orx : Math.random() * this.canvasEle.width;
       point.ny = options.ParticlePolymerizeFlag ? point.ory : Math.random() * this.canvasEle.height;
     });
   }
@@ -244,12 +273,14 @@ class DameDaneParticle {
   /**
    * 修改展示的图片
    * @param {string} src 图片路径
+   * @param {object} options 图片选项设置
    */
-  ChangeImg(src) {
+  ChangeImg(src, options) {
     this.IMG.src = src
+    this.options = options
   }
 }
 
-const DameDaneParticleDemo = new DameDaneParticle(document.getElementById('akCanvas'), './image/island.png', 700, 100, 320, undefined, {
+const DameDaneParticleDemo = new DameDaneParticle(document.getElementById('akCanvas'), './image/island.png', 50, 50, 360, undefined, {
   spacing: 1.8
 })
