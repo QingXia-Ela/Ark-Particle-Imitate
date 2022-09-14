@@ -9,6 +9,8 @@ interface ParticleOptions {
   renderX: number
   /** 渲染起点 Y */
   renderY: number
+  /** 粒子大小, 默认 1 */
+  size?: number
   /** 渲染宽度，可省略，**但建议设置为350左右，并在此基础上进行调整**，如果只设置该项则图片会按照原图的比例进行宽高缩放 */
   w?: number
   /** 渲染高度，可省略 */

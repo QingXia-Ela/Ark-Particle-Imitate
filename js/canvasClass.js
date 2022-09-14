@@ -59,36 +59,44 @@ class Point {
     // 粒子原始位置距离判断
     let dx = mx - this.orx,
       dy = my - this.ory,
-      curDx = mx - this.x,
-      curDy = my - this.y;
+      curDx = (mx - this.x),
+      curDy = (my - this.y);
 
     // 鼠标相对点原始位置的直线距离的平方
-    let d = dx * dx + dy * dy;
+    let d1 = curDx * curDx + curDy * curDy, d2 = dx * dx + dy * dy;
 
     // 鼠标相对点原始位置的距离比例, 小于 1 为在边界外, 等于 1 为刚好在边界上, 大于 1 为在边界内
-    let f = Thickness / d;
+    let f = Thickness / d1, f2 = Thickness / d2;
+
+
+    f = f < 0.1 ? 0.1 : f;
+
+    let finalF = 0, finalT = 0
 
     // 吸附模式
     if (effectParticleMode == 'adsorption') {
       // 防止圆点飞太远
-      if (d < Thickness) {
-        if (f > 2.5) f = 2.5;
-      }
+      f2 = f2 > 2 ? 10 : f2
+      if (f2 > 0.5 && f2 <= 1.5) f2 = 0.5
+      finalF = f2
     }
     // 排斥模式
-    else {
+    else if (effectParticleMode == 'repulsion') {
       // 防止圆点飞太远
-      f = f > 7 ? 7 : f;
+      f = f > 7 ? 7 : f
+      finalF = f
     }
 
-    let t = Math.atan2(curDy, curDx);
-    let vx = f * Math.cos(t),
-      vy = f * Math.sin(t);
+    finalT = Math.atan2(curDy, curDx);
+    let vx = finalF * Math.cos(finalT),
+      vy = finalF * Math.sin(finalT);
 
     // 计算出要移动的距离
     if (effectParticleMode) {
-      this.spx += (adsorbentMode ? vx : -vx) * Drag + (this.orx - this.x) * Ease
-      this.spy += (adsorbentMode ? vy : -vy) * Drag + (this.ory - this.y) * Ease
+      let finalX = ((effectParticleMode === 'adsorption' ? vx : -vx) * Drag) + ((this.orx - this.x) * Ease) / 400,
+        finalY = ((effectParticleMode === 'adsorption' ? vy : -vy) * Drag) + ((this.ory - this.y) * Ease) / 400
+      this.spx += finalX
+      this.spy += finalY
     }
 
     // 最终计算
@@ -115,11 +123,9 @@ class Point {
 
   render() {
     const ctx = this.canvas.getContext('2d')
-    let { spacing } = this.options, proportion = window.innerHeight / window.outerHeight
-    spacing *= proportion > 0.5 ? proportion : 0.5
     ctx.beginPath()
     // 改变初始位置
-    ctx.arc(this.x * spacing, this.y * spacing, this.size, 0, 360)
+    ctx.arc(this.x, this.y, this.size, 0, 360)
     ctx.fillStyle = `rgba(${this.color},${this.opacity})`
     ctx.fill()
     ctx.closePath()
@@ -133,7 +139,8 @@ class DameDaneParticle {
    * @param {Function} callback 
    */
   constructor(canvas, options = {
-    spacing: 1
+    spacing: 1,
+    size: 1
   }, callback) {
     // 解构
     const { src } = options
@@ -169,8 +176,8 @@ class DameDaneParticle {
     // options 备份
     this.options = options
 
-    /** 最终间距，基于窗口高度计算 */
-    this._finalSpacing = this.options.spacing * (window.innerHeight / window.outerHeight)
+    /** 窗口大小是否改变 */
+    this.hasResize = false
 
     // 图片加载完成
     this.IMG.onload = () => {
@@ -195,6 +202,7 @@ class DameDaneParticle {
       eleCtx.drawImage(this.IMG, 0, 0, this.ImgW, this.ImgH);
       this._imgArr = eleCtx.getImageData(0, 0, this.ImgW, this.ImgH).data;
       eleCtx.clearRect(0, 0, canvas.width, canvas.height);
+      // 第一次初始化图片
       this._InitParticle(this._imgArr, true)
       this._Draw2Canvas()
 
@@ -203,18 +211,23 @@ class DameDaneParticle {
     }
 
     // 鼠标事件
-    this.canvasEle.addEventListener("mousemove", (e) => {
+    const changeMxMy = _.throttle((e) => {
       const cRect = canvas.getBoundingClientRect();
-      mx = e.clientX - cRect.left;
-      my = e.clientY - cRect.top;
-    })
+      mx = e.clientX - cRect.left + 3;
+      my = e.clientY - cRect.top + 3;
+    }, 20)
+    canvas.addEventListener("mousemove", changeMxMy)
 
-    // 窗口自适应
-    window.addEventListener('resize', () => {
+    const fit = _.throttle(() => {
       canvas = this.canvasEle
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-    })
+      this.hasResize = true
+      this._InitParticle()
+    }, 10)
+
+    // 窗口自适应
+    window.addEventListener('resize', fit)
   }
 
   /**
@@ -229,6 +242,9 @@ class DameDaneParticle {
 
     let arr = this.PointArr
 
+    let { spacing, size } = this.options, proportion = window.innerHeight / window.outerHeight
+    spacing *= proportion > 0.5 ? proportion : 0.5
+
     let r, g, b, val, position
     const gap = 4;
     for (var h = 0; h < imgH; h += gap) {
@@ -242,12 +258,12 @@ class DameDaneParticle {
         if (val < 50) {
           if (arr[cnt]) {
             const point = arr[cnt]
-            point.orx = point.nx = w + this.renderX
-            point.ory = point.ny = h + this.renderY
+            point.orx = point.nx = w * spacing + this.renderX
+            point.ory = point.ny = h * spacing + this.renderY
             const c = Math.floor(val / 3)
             point.color = `${255 - c},${255 - c},${255 - c}`
           }
-          else arr[cnt] = new Point(w + this.renderX, h + this.renderY, 1, val, this.canvasEle, this.hasInit)
+          else arr[cnt] = new Point(w * spacing + this.renderX, h * spacing + this.renderY, size, val, this.canvasEle, this.hasInit)
           cnt++
         }
       }
@@ -271,7 +287,6 @@ class DameDaneParticle {
           arr[len].ory = arr[len].ny = ty
       }
     }
-
 
     // 解决散开后切换图片再聚合时粒子没有从随机位置回到正常位置的问题
     if (!this.ParticlePolymerizeFlag) this.ParticlePolymerize(false)
@@ -320,7 +335,12 @@ const DameDaneParticleDemo = new DameDaneParticle(document.getElementById('akCan
   renderX: 30,
   renderY: 60,
   w: 360,
-  spacing: 1.8
+  size: 1,
+  spacing: 2,
+  effectParticleMode: 'adsorption',
+  Drag: 0.95,
+  Ease: 0.1,
+  Thickness: Math.pow(40, 2)
 })
 
 let f = false

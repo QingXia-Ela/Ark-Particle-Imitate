@@ -17,5 +17,6 @@ body {
 }
 
 #akCanvas {
-  pointer-events: none;
+  /* pointer-events: none; */
+  cursor: url(../image/mouse.png) 0 0, pointer;
 }
