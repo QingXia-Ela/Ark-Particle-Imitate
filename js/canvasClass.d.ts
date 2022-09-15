@@ -15,6 +15,19 @@ interface ParticleOptions {
   w?: number
   /** 渲染高度，可省略，**设置该项时图片不会进行缩放** */
   h?: number
+  /** 有效颜色区间，默认 `300 ~ 765` 为有效区间，颜色计算方式为 r g b 三通道值的总和 */
+  validColor?: {
+    /** 最小值，默认 300 */
+    min?: number
+    /** 最大值，默认 765 */
+    max?: number
+    /** 
+     * 范围反向覆盖
+     * 
+     * 当设置范围为 `50 ~ 300` 之间时，启用此项后范围会转变成 `0 ~ 50 && 300 ~ 765` 
+     */
+    invert?: boolean
+  }
   /** 粒子横竖间距 */
   spacing?: number
   /** 鼠标影响的粒子半径，**设置 `effectParticleMode` 后生效**, 默认 50 */
@@ -24,7 +37,9 @@ interface ParticleOptions {
   /** 曲线柔和，**设置 `effectParticleMode` 后生效**, 默认 0.1 */
   Ease?: number
   /** 鼠标影响粒子行为模式，不传入则关闭影响 */
-  effectParticleMode?: 'adsorption' | 'repulsion'
+  effectParticleMode?: 'adsorption' | 'repulsion',
+  /** 取消粒子动画，如果此项为 `true` 则粒子直接出现在目标位置而不是从随机位置飞来 */
+  cancelParticleAnimation?: boolean
 }
 
 declare class Point {

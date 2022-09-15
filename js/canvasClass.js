@@ -7,8 +7,8 @@ class Point {
     // 圆点大小
     this.size = size
     // 当前位置
-    this.x = cancelRandPlace ? orx + 50 * Math.random() : Math.random() * canvas.width
-    this.y = cancelRandPlace ? ory + 50 * Math.random() : Math.random() * canvas.height
+    this.x = cancelRandPlace ? orx : Math.random() * canvas.width
+    this.y = cancelRandPlace ? ory : Math.random() * canvas.height
     // 下一个移动位置
     this.nx = orx
     this.ny = ory
@@ -16,13 +16,13 @@ class Point {
     this.spx = 0
     this.spy = 0
     // 透明度
-    this.opacity = 0;
+    this.opacity = cancelRandPlace ? 1 : 0;
     this.canvas = canvas
 
     // 颜色
     const c = Math.floor(colorNum / 3)
     /** 纯数字rgb值 , 例: `255,255,255` */
-    this.color = `${255 - c},${255 - c},${255 - c}`
+    this.color = `${c},${c},${c}`
   }
 
   update(ParticlePolymerizeFlag = true, options, mx, my) {
@@ -124,7 +124,11 @@ class DameDaneParticle {
       size: 1,
       Drag: 0.95,
       Ease: 0.1,
-      Thickness: 50
+      Thickness: 50,
+      validColor: {
+        min: 300, max: 765, invert: false
+      },
+      cancelParticleAnimation: false
     }
     for (const i in initOptions) {
       if (typeof options[i] === 'undefined') options[i] = initOptions[i]
@@ -233,7 +237,7 @@ class DameDaneParticle {
 
     let arr = this.PointArr
 
-    let { spacing, size } = this.options, proportion = window.innerHeight / window.outerHeight
+    let { spacing, size, validColor, cancelParticleAnimation } = this.options, proportion = window.innerHeight / window.outerHeight
     spacing *= proportion > 0.5 ? proportion : 0.5
 
     let r, g, b, val, position
@@ -245,16 +249,17 @@ class DameDaneParticle {
           g = ImgData[position + 1],
           b = ImgData[position + 2];
         val = r + g + b
-        // 判断是否有前置像素
-        if (val < 50) {
-          if (arr[cnt]) {
+        // 像素符合条件
+        if ((validColor.invert && (val < validColor.min || val > validColor.max)) || (!validColor.invert && val > validColor.min && val < validColor.max)) {
+          // 判断是否有前置像素
+          if (arr[cnt] && !cancelParticleAnimation) {
             const point = arr[cnt]
             point.orx = point.nx = w * spacing + this.renderX
             point.ory = point.ny = h * spacing + this.renderY
             const c = Math.floor(val / 3)
             point.color = `${255 - c},${255 - c},${255 - c}`
           }
-          else arr[cnt] = new Point(w * spacing + this.renderX, h * spacing + this.renderY, size, val, this.canvasEle, this.hasInit)
+          else arr[cnt] = new Point(w * spacing + this.renderX, h * spacing + this.renderY, size, val, this.canvasEle, this.hasInit || cancelParticleAnimation)
           cnt++
         }
       }
@@ -264,7 +269,7 @@ class DameDaneParticle {
       this.PointArr = arr.splice(0, cnt)
 
     // 最终位置打乱
-    if (rebuildParticle) {
+    if (rebuildParticle && !cancelParticleAnimation) {
       arr = this.PointArr
       let len = arr.length, randIndex = 0, tx = 0, ty = 0
       while (len) {

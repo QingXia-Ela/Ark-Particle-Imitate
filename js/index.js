@@ -1,18 +1,22 @@
 let DameDaneParticleDemo = new DameDaneParticle(document.getElementById('akCanvas'), {
-  src: './image/test.png',
-  renderX: 30,
-  renderY: 60,
-  w: 360,
-  size: 1,
+  src: './image/test2.jpg',
+  renderX: 400,
+  renderY: 100,
+  w: 300,
+  size: 1.5,
   spacing: 2,
+  validColor: {
+    min: 100,
+    max: 765,
+    invert: false
+  },
   effectParticleMode: 'repulsion',
-  Thickness: 20
+  Thickness: 40,
+  cancelParticleAnimation: true
 })
 
-let f = false
+setTimeout(() => {
+  DameDaneParticleDemo.ChangeImg('./image/test.jpg')
 
-setInterval(() => {
-  f ? DameDaneParticleDemo.ChangeImg('./image/test.png', { renderX: 300, w: 360 }) :
-    DameDaneParticleDemo.ChangeImg('./image/island.png', { renderX: 500, renderY: 100, w: 300 })
-  f = !f
-}, 6000);
+}, 3000);
+let f = false
