@@ -20,7 +20,8 @@ class Point {
     this.canvas = canvas
 
     // 颜色
-    const c = Math.floor(colorNum / 3)
+    let c = Math.floor(colorNum / 3)
+
     /** 纯数字rgb值 , 例: `255,255,255` */
     this.color = `${c},${c},${c}`
   }
@@ -34,39 +35,34 @@ class Point {
     this.spy = (this.ny - this.y) / (ParticlePolymerizeFlag ? 30 : 60)
 
     // 粒子原始位置距离判断
-    let dx = mx - this.orx,
-      dy = my - this.ory,
-      curDx = (mx - this.x),
+    let curDx = (mx - this.x),
       curDy = (my - this.y);
 
     // 鼠标相对点原始位置的直线距离的平方
-    let d1 = curDx * curDx + curDy * curDy, d2 = dx * dx + dy * dy;
+    let d1 = curDx * curDx + curDy * curDy;
 
     // 鼠标相对点原始位置的距离比例, 小于 1 为在边界外, 等于 1 为刚好在边界上, 大于 1 为在边界内
-    let f = Thickness / d1, f2 = Thickness / d2;
-
+    let f = Thickness / d1;
 
     f = f < 0.1 ? 0.1 : f;
 
-    let finalF = 0, finalT = 0
+    let finalT = 0
 
     // 吸附模式
     if (effectParticleMode == 'adsorption') {
       // 防止圆点飞太远
-      f2 = f2 > 2 ? 10 : f2
-      if (f2 > 0.5 && f2 <= 1.5) f2 = 0.5
-      finalF = f2
+      f = f > 12 ? 12 : f
+      if (f > 0.5 && f <= 1.5) f = 0.5
     }
     // 排斥模式
     else if (effectParticleMode == 'repulsion') {
       // 防止圆点飞太远
       f = f > 7 ? 7 : f
-      finalF = f
     }
 
     finalT = Math.atan2(curDy, curDx);
-    let vx = finalF * Math.cos(finalT),
-      vy = finalF * Math.sin(finalT);
+    let vx = f * Math.cos(finalT),
+      vy = f * Math.sin(finalT);
 
     // 计算出要移动的距离
     if (effectParticleMode) {
@@ -103,7 +99,7 @@ class Point {
     ctx.beginPath()
     // 改变初始位置
     ctx.arc(this.x, this.y, this.size, 0, 360)
-    ctx.fillStyle = `rgba(${this.color},${this.opacity})`
+    ctx.fillStyle = `rgba(${this.color},${this.opacity > 1 ? 1 : this.opacity})`
     ctx.fill()
     ctx.closePath()
   }
@@ -250,14 +246,14 @@ class DameDaneParticle {
           b = ImgData[position + 2];
         val = r + g + b
         // 像素符合条件
-        if ((validColor.invert && (val < validColor.min || val > validColor.max)) || (!validColor.invert && val > validColor.min && val < validColor.max)) {
+        if ((validColor.invert && (val <= validColor.min || val >= validColor.max)) || (!validColor.invert && val >= validColor.min && val <= validColor.max)) {
           // 判断是否有前置像素
           if (arr[cnt] && !cancelParticleAnimation) {
             const point = arr[cnt]
             point.orx = point.nx = w * spacing + this.renderX
             point.ory = point.ny = h * spacing + this.renderY
-            const c = Math.floor(val / 3)
-            point.color = `${255 - c},${255 - c},${255 - c}`
+            let c = Math.floor(val / 3)
+            point.color = `${c},${c},${c}`
           }
           else arr[cnt] = new Point(w * spacing + this.renderX, h * spacing + this.renderY, size, val, this.canvasEle, this.hasInit || cancelParticleAnimation)
           cnt++

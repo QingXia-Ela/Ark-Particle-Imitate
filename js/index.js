@@ -1,22 +1,39 @@
 let DameDaneParticleDemo = new DameDaneParticle(document.getElementById('akCanvas'), {
-  src: './image/test2.jpg',
-  renderX: 400,
+  src: './image/arknight.png',
+  renderX: 300,
   renderY: 100,
-  w: 300,
-  size: 1.5,
-  spacing: 2,
+  w: 600,
+  size: 1.2,
+  spacing: 1.2,
   validColor: {
-    min: 100,
+    min: 300,
     max: 765,
     invert: false
   },
-  effectParticleMode: 'repulsion',
-  Thickness: 40,
-  cancelParticleAnimation: true
+  effectParticleMode: 'adsorption',
+  Thickness: 25,
 })
 
-setTimeout(() => {
-  DameDaneParticleDemo.ChangeImg('./image/test.jpg')
+function arknight() {
+  DameDaneParticleDemo.ChangeImg('./image/arknight.png', { w: 600 })
+}
 
-}, 3000);
-let f = false
+function island() {
+  DameDaneParticleDemo.ChangeImg('./image/island.png', { w: 400 })
+}
+
+function longmen() {
+  DameDaneParticleDemo.ChangeImg('./image/longmen.png', { w: 450 })
+}
+
+function penguin() {
+  DameDaneParticleDemo.ChangeImg('./image/penguin.png', { w: 300 })
+}
+
+function rhine() {
+  DameDaneParticleDemo.ChangeImg('./image/rhine.png', { w: 400 })
+}
+
+function reunion() {
+  DameDaneParticleDemo.ChangeImg('./image/reunion.jpg', { w: 300 })
+}
