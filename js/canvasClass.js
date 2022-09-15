@@ -1,22 +1,5 @@
-const options = {
-  THICKNESS: Math.pow(50, 2),
-  DRAG: 0.9,
-  EASE: 0.2,
-  adsorbentMode: false,
-}
-
-let mx = 0, my = 0
-
 class Point {
-  /**
-   * 点示例，**该类为内部类，不建议调用**
-   * @param {number} orx 目标位置 x
-   * @param {number} ory 目标位置 y 
-   * @param {number} size 圆点大小
-   * @param {number} colorNum rgb 加起来的总和
-   * @param {HTMLCanvasElement} canvas canvas 元素
-   * @param {boolean} cancelRandPlace 取消点初始化的随机点位
-   */
+
   constructor(orx, ory, size, colorNum = 0, canvas, cancelRandPlace = false) {
     // 原始位置
     this.orx = orx
@@ -42,15 +25,9 @@ class Point {
     this.color = `${255 - c},${255 - c},${255 - c}`
   }
 
-  /**
-   * 更新粒子位置信息
-   * @param {boolean} ParticlePolymerizeFlag 聚合设置，默认聚合展示图片
-   * @param {ParticleOptions} options 粒子设置
-   */
-  update(ParticlePolymerizeFlag = true, options) {
+  update(ParticlePolymerizeFlag = true, options, mx, my) {
     // 解构变量
     const { Thickness, Drag, Ease, effectParticleMode } = options
-    this.options = options
 
     //移动速度
     this.spx = (this.nx - this.x) / (ParticlePolymerizeFlag ? 30 : 60)
@@ -138,10 +115,22 @@ class DameDaneParticle {
    * @param {ParticleOptions} options 
    * @param {Function} callback 
    */
-  constructor(canvas, options = {
-    spacing: 1,
-    size: 1
-  }, callback) {
+  constructor(canvas, options, callback) {
+    // 预处理
+    const initOptions = {
+      renderX: 0,
+      renderY: 0,
+      spacing: 1,
+      size: 1,
+      Drag: 0.95,
+      Ease: 0.1,
+      Thickness: 50
+    }
+    for (const i in initOptions) {
+      if (typeof options[i] === 'undefined') options[i] = initOptions[i]
+    }
+    options.Thickness *= options.Thickness
+
     // 解构
     const { src } = options
 
@@ -162,22 +151,24 @@ class DameDaneParticle {
     // 图片信息
     this.ImgW = 0, this.ImgH = 0
 
-    /** 粒子数组 */
+    /** 粒子位置信息数组 */
     this.PointArr = []
     /** 粒子散开聚合标记, `true` 为聚合 */
     this.ParticlePolymerizeFlag = true
 
-    // 动画 id
+    /** 动画 id */
     this.animeId = -1
+
+    /** 鼠标位置 X */
+    this.mx = 0
+    /** 鼠标位置 Y */
+    this.my = 0
 
     // 初始化标记
     this.hasInit = false
 
     // options 备份
     this.options = options
-
-    /** 窗口大小是否改变 */
-    this.hasResize = false
 
     // 图片加载完成
     this.IMG.onload = () => {
@@ -205,29 +196,29 @@ class DameDaneParticle {
       // 第一次初始化图片
       this._InitParticle(this._imgArr, true)
       this._Draw2Canvas()
-
       this.hasInit = true
+
       callback && callback()
     }
 
-    // 鼠标事件
-    const changeMxMy = _.throttle((e) => {
+    /** 鼠标移动监听函数 */
+    this.$changeMxMy = _.throttle((e) => {
       const cRect = canvas.getBoundingClientRect();
-      mx = e.clientX - cRect.left + 3;
-      my = e.clientY - cRect.top + 3;
+      this.mx = e.clientX - cRect.left + 3;
+      this.my = e.clientY - cRect.top + 3;
     }, 20)
-    canvas.addEventListener("mousemove", changeMxMy)
+    canvas.addEventListener("mousemove", this.$changeMxMy)
 
-    const fit = _.throttle(() => {
+    /** 自适应函数 */
+    this.$fit = _.throttle(() => {
       canvas = this.canvasEle
       canvas.width = window.innerWidth
       canvas.height = window.innerHeight
-      this.hasResize = true
       this._InitParticle()
     }, 10)
 
     // 窗口自适应
-    window.addEventListener('resize', fit)
+    window.addEventListener('resize', this.$fit)
   }
 
   /**
@@ -297,28 +288,35 @@ class DameDaneParticle {
     cancelAnimationFrame(this.animeId)
     const w = this.canvasEle.width, h = this.canvasEle.height
     this.ctx.clearRect(0, 0, w, h)
-    this.PointArr.forEach((point) => {
-      point.update(this.ParticlePolymerizeFlag, this.options);
-      point.render();
-    })
+    this.PointArr.forEach(
+      /** @param {Point} point */
+      (point) => {
+        point.update(this.ParticlePolymerizeFlag, this.options, this.mx, this.my);
+        point.render();
+      })
     this.animeId = requestAnimationFrame(this._Draw2Canvas)
   }
 
   /**
-  * 散开聚合控制
-  * @param {boolean | undefined} flag 控制是否聚合，不传入则以当前状态取反
-  */
+    * 散开聚合控制
+    * @param {boolean | undefined} flag 控制是否聚合，不传入则以当前状态取反
+    */
   ParticlePolymerize(flag) {
     if (typeof flag === 'boolean') this.ParticlePolymerizeFlag = flag
     else this.ParticlePolymerizeFlag = !this.ParticlePolymerizeFlag
-    // 控制圆点位置
-    this.PointArr.forEach((point) => {
-      point.nx = this.ParticlePolymerizeFlag ? point.orx : Math.random() * this.canvasEle.width;
-      point.ny = this.ParticlePolymerizeFlag ? point.ory : Math.random() * this.canvasEle.height;
-    });
+    this.PointArr.forEach(
+      /** @param {Point} point */
+      (point) => {
+        point.nx = this.ParticlePolymerizeFlag ? point.orx : Math.random() * this.canvasEle.width;
+        point.ny = this.ParticlePolymerizeFlag ? point.ory : Math.random() * this.canvasEle.height;
+      });
   }
 
-
+  /**
+    * 修改展示的图片，未设置的项会继承上一张图片的设置
+    * @param {string} src 图片路径
+    * @param {ParticleOptions} options 选项设置，不传入则继承上一次的设置
+    */
   ChangeImg(src, options) {
     this.IMG.src = src
     // 替换设置
@@ -328,25 +326,15 @@ class DameDaneParticle {
       }
     }
   }
+
+  /** 预销毁当前实例，销毁对象前请通过此方法解绑监听事件与清除画布 */
+  PreDestory(callback) {
+    this.canvasEle.removeEventListener('mousemove', this.$changeMxMy)
+    window.removeEventListener('resize', this.$fit)
+    cancelAnimationFrame(this.animeId)
+    this.PointArr = []
+    this.ctx.clearRect(0, 0, this.canvasEle.width, this.canvasEle.height)
+
+    callback && callback()
+  }
 }
-
-const DameDaneParticleDemo = new DameDaneParticle(document.getElementById('akCanvas'), {
-  src: './image/test.png',
-  renderX: 30,
-  renderY: 60,
-  w: 360,
-  size: 1,
-  spacing: 2,
-  effectParticleMode: 'adsorption',
-  Drag: 0.95,
-  Ease: 0.1,
-  Thickness: Math.pow(40, 2)
-})
-
-let f = false
-
-setInterval(() => {
-  f ? DameDaneParticleDemo.ChangeImg('./image/test.png', { renderX: 300, w: 360 }) :
-    DameDaneParticleDemo.ChangeImg('./image/island.png', { renderX: 500, renderY: 100, w: 300 })
-  f = !f
-}, 5000);
