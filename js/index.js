@@ -1,8 +1,8 @@
 let DameDaneParticleDemo = new DameDaneParticle(document.getElementById('akCanvas'), {
-  src: './image/arknight.png',
-  renderX: 300,
+  src: './image/penguin.png',
+  renderX: 30,
   renderY: 100,
-  w: 600,
+  w: 300,
   size: 1.2,
   spacing: 1.2,
   validColor: {
