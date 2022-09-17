@@ -9,6 +9,8 @@ interface ParticleOptions {
   renderX?: number
   /** 渲染起点 Y, 默认 0 */
   renderY?: number
+  /** 粒子横竖间距 */
+  spacing?: number
   /** 粒子大小, 默认 1 */
   size?: number
   /** 渲染宽度，可省略，**但建议设置为350左右，并在此基础上进行调整**，如果只设置该项则图片高度会根据宽度进行缩放 */
@@ -28,8 +30,6 @@ interface ParticleOptions {
      */
     invert?: boolean
   }
-  /** 粒子横竖间距 */
-  spacing?: number
   /** 鼠标影响的粒子半径，**设置 `effectParticleMode` 后生效**, 默认 50 */
   Thickness?: number
   /** 拖拽力度，**设置 `effectParticleMode` 后生效**, 默认 0.95 */

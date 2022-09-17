@@ -16,7 +16,7 @@ class Point {
     this.spx = 0;
     this.spy = 0;
     // 透明度
-    this.opacity = cancelRandPlace ? 1 : 0;
+    this.opacity = 0;
     this.canvas = canvas;
 
     // 颜色
@@ -177,6 +177,8 @@ class DameDaneParticle {
 
     // 初始化标记
     this.hasInit = false;
+    /** 执行了动画触发标记 */
+    this.hasDraw = false;
 
     // options 备份
     this.options = options;
@@ -206,7 +208,7 @@ class DameDaneParticle {
       eleCtx.clearRect(0, 0, canvas.width, canvas.height);
       // 第一次初始化图片
       this._InitParticle(this._imgArr, true);
-      this._Draw2Canvas();
+      if (!this.hasDraw) this._Draw2Canvas();
       this.hasInit = true;
 
       callback && callback();
@@ -294,7 +296,7 @@ class DameDaneParticle {
 
   /** 绘制到 canvas，**此项为内置 api， 不建议随便调用** */
   _Draw2Canvas = () => {
-    cancelAnimationFrame(this.animeId);
+    this.hasDraw = true
     const w = this.canvasEle.width, h = this.canvasEle.height;
     this.ctx.clearRect(0, 0, w, h);
     this.PointArr.forEach(
@@ -303,7 +305,7 @@ class DameDaneParticle {
         point.update(this.ParticlePolymerizeFlag, this.options, this.mx, this.my);
         point.render();
       })
-    this.animeId = requestAnimationFrame(this._Draw2Canvas);
+    requestAnimationFrame(this._Draw2Canvas);
   }
 
   /**
