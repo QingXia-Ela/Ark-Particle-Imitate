@@ -109,7 +109,7 @@ class Point {
       this.orx = this.nx = newX
     if (newY)
       this.ory = this.ny = newY
-    if (colorString) {
+    if (colorVal) {
       let c = Math.floor(colorVal / 3);
       this.color = `${c},${c},${c}`;
     }
