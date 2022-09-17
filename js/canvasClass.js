@@ -103,6 +103,17 @@ class Point {
     ctx.fill();
     ctx.closePath();
   }
+
+  changePos(newX, newY, colorVal) {
+    if (newX)
+      this.orx = this.nx = newX
+    if (newY)
+      this.ory = this.ny = newY
+    if (colorString) {
+      let c = Math.floor(colorVal / 3);
+      this.color = `${c},${c},${c}`;
+    }
+  }
 }
 
 class DameDaneParticle {
@@ -250,10 +261,7 @@ class DameDaneParticle {
           // 判断是否有前置像素
           if (arr[cnt] && !cancelParticleAnimation) {
             const point = arr[cnt];
-            point.orx = point.nx = w * spacing + this.renderX;
-            point.ory = point.ny = h * spacing + this.renderY;
-            let c = Math.floor(val / 3);
-            point.color = `${c},${c},${c}`;
+            point.changePos(w * spacing + this.renderX, h * spacing + this.renderY, val)
           }
           else arr[cnt] = new Point(w * spacing + this.renderX, h * spacing + this.renderY, size, val, this.canvasEle, this.hasInit || cancelParticleAnimation);
           cnt++;

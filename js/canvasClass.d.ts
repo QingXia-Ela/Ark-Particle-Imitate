@@ -73,6 +73,14 @@ declare class Point {
 
   /** 渲染粒子 */
   render(): void
+
+  /**
+   * 改变粒子位置
+   * @param newX 粒子新的 X 位置
+   * @param newY 粒子新的 Y 位置
+   * @param colorVal RGB 总和
+   */
+  changePos(newX, newY, colorVal): void
 }
 
 declare class DameDaneParticle {
