@@ -80,7 +80,7 @@ declare class Point {
    * @param newY 粒子新的 Y 位置
    * @param colorVal RGB 总和
    */
-  changePos(newX, newY, colorVal): void
+  changePos(newX: number, newY: number, colorVal: number): void
 }
 
 declare class DameDaneParticle {
